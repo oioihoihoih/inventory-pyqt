@@ -34,12 +34,42 @@ class DB:
         with self.connect() as conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute(sql, (number , product_name))
+                    cursor.execute(sql, (number , (product_name)))
                 conn.commit()
                 return True
             except Exception:
                 conn.rollback()
-                return 
+                return
+
+    def insert_or_update_product(self, product_name, price, number):
+        select_sql ="SELECT product_id FROM product WHERE product_name = %s"
+        insert_sql = "INSERT INTO product (product_name, price, stock) VALUES (%s, %s, %s)"
+        update_sql = "UPDATE product SET price = %s, stock = stock + %s WHERE product_name = %s"
+
+        with self.connect() as conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(select_sql, (product_name,))
+                    product = cursor.fetchone()
+
+                    if product:
+                        cursor.execute(
+                            update_sql,
+                            (price, number, product_name),
+                        )
+                        result = "updated"
+                    else:
+                        cursor.execute(
+                            insert_sql,
+                            (product_name, price, number),
+                        )
+                        result = "inserted"
+
+                conn.commit()
+                return result
+            except Exception:
+                conn.rollback()
+                
     # 모든 제품 조회
     def fetch_product(self):
             sql = "SELECT * FROM product"
@@ -50,10 +80,10 @@ class DB:
 
     # 재고 조회
     def fetch_stock(self, product_name):
-        sql = "SELECT stock FROM product = %s"
+        sql = "SELECT stock FROM product WHERE product_name = %s"
         with self.connect() as conn:
             with conn.cursor() as cursor:
-                cursor.execute(sql,product_name)
+                cursor.execute(sql,(product_name))
                 return cursor.fetchone()  # [(stock),]
     # 재고 사용
     def update_stock(self, product_name,  number):
@@ -66,14 +96,16 @@ class DB:
                 return True
             except Exception:
                 conn.rollback()
-                return     
+                return
+
+            
     # 상세 주문 추가 - 주문 테이블 추가
-    def insert_order(self, customer_id, product_name, number):
-        sql = "INSERT INTO orders (customer_id, product_name,number) VALUES (%s,%s,%s)"
+    def insert_order(self, product_name, number):
+        sql = "INSERT INTO orders ( product_name,number) VALUES (%s,%s)"
         with self.connect() as conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute(sql, (customer_id, product_name, number))
+                    cursor.execute(sql, ( product_name, number))
                 conn.commit()
                 return True
             except Exception:
@@ -81,12 +113,12 @@ class DB:
                 return False
 
     # 주문 정보
-    def insert_customer(self, customer_id, name, total, phone, datetime):
-            sql = "INSERT INTO customer (customer_id, name,total,phone,datetime) VALUES (%s,%s,%s,%s,%s)"
+    def insert_customer(self,  name, total, phone, datetime):
+            sql = "INSERT INTO customer ( name,total,phone,datetime) VALUES (%s,%s,%s,%s)"
             with self.connect() as conn:
                 try:
                     with conn.cursor() as cursor:
-                        cursor.execute(sql, (customer_id, name, total, phone,datetime))
+                        cursor.execute(sql, ( name, total, phone,datetime))
                     conn.commit()
                     return True
                 except Exception:
