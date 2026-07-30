@@ -42,7 +42,7 @@ class DB:
                 return
 
     def insert_or_update_product(self, product_name, price, number):
-        select_sql ="SELECT product_id FROM product WHERE product_name = %s"
+        select_sql ="SELECT id FROM product WHERE product_name = %s"
         insert_sql = "INSERT INTO product (product_name, price, stock) VALUES (%s, %s, %s)"
         update_sql = "UPDATE product SET price = %s, stock = stock + %s WHERE product_name = %s"
 
@@ -100,17 +100,31 @@ class DB:
 
             
     # 상세 주문 추가 - 주문 테이블 추가
-    def insert_order(self, product_name, number):
-        sql = "INSERT INTO orders ( product_name,number) VALUES (%s,%s)"
+    def insert_order(self,customer_id, product_name, number):
+        sql = "INSERT INTO orders (customer_id, product_name,number) VALUES (%s,%s,%s)"
         with self.connect() as conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute(sql, ( product_name, number))
+                    cursor.execute(sql, (customer_id, product_name, number))
                 conn.commit()
                 return True
             except Exception:
                 conn.rollback()
                 return False
+
+    def change_customer_id(self, a, customer_id):
+        sql = "UPDATE orders SET customer_id = %s WHERE customer_id = %s"
+        with self.connect() as conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(sql, (customer_id, a))
+                conn.commit()
+                return True
+            except Exception:
+                conn.rollback()
+                return False
+
+
 
     # 주문 정보
     def insert_customer(self,  name, total, phone, datetime):
@@ -125,10 +139,67 @@ class DB:
                     conn.rollback()
                     return False
 
-    # 주문 조회
-    # def fetch_order(self, product_name, number):
-    #     sql = "SELECT * FROM customers (product_name,number) VALUES (%s,%s)"
-    #     with self.connect() as conn:
-    #         with conn.cursor() as cursor:
-    #             cursor.execute(sql,product_name, number)
-    #             return cursor.fetchall()  # [(customer_id, product_name, number, datetime)]
+    def update_product(
+        self,
+        id,
+        product_name,
+        price,
+        stock,
+    ):
+        sql = """
+            UPDATE product
+            SET product_name = %s,
+                price = %s,
+                stock = %s
+            WHERE id = %s
+        """
+
+        with self.connect() as conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        sql,
+                        (
+                            product_name,
+                            price,
+                            stock,
+                            id,
+                        ),
+                    )
+
+                conn.commit()
+                return True
+
+            except Exception as error:
+                conn.rollback()
+                print("상품 수정 실패:", repr(error))
+                return False
+
+    def delete_product(self, id):
+        sql = """
+            DELETE FROM product
+            WHERE id = %s
+        """
+
+        with self.connect() as conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        sql,
+                        (id,),
+                    )
+
+                conn.commit()
+                return True
+
+            except Exception as error:
+                conn.rollback()
+                print("상품 삭제 실패:", repr(error))
+                return False
+
+    def fetch_receipts(self):
+        sql = "SELECT p.product_name, o.number FROM orders as o JOIN product as p ON p.id =o.product_id"
+        with self.connect() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+                return cursor.fetchall()  # [(product_name, number)
