@@ -51,6 +51,7 @@ class OrderDialog(QMainWindow):
         phone = self.phonenumber.text().strip()
 
         customer_id = self.db.insert_customer(name, total, phone, date.today())
+        print(customer_id)
         for product in self.products:
             number = self.number_inputs[product[1]].value()
             print(type(number),number)
@@ -65,14 +66,16 @@ class OrderDialog(QMainWindow):
                 self.db.update_stock(product[1],number)
                 total += product[2] * number
                 self.db.insert_order(customer_id, product[1],number)
-        self.db.update_total(total)
+
+        print(total)
+        self.db.update_total(total,customer_id)
 
         if self.main_window is not None:
             self.main_window.load_products()
-            self.show_receipt()
+            self.show_receipt(customer_id)
 
 
-    def show_receipt(self):
+    def show_receipt(self,customer_id):
 
         self.table = QTableWidget()
         self.table.setColumnCount(2)
@@ -81,7 +84,7 @@ class OrderDialog(QMainWindow):
         self.table.verticalHeader().setVisible(False)
 
         
-        rows = self.db.fetch_receipts()
+        rows = self.db.fetch_receipts(customer_id)
         print(rows)
         self.table.setRowCount(len(rows))
         for r, (product_name, number) in enumerate(rows):
