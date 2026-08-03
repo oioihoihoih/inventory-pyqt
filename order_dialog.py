@@ -49,7 +49,8 @@ class OrderDialog(QMainWindow):
         total = 0
         name = self.username.text().strip()
         phone = self.phonenumber.text().strip()
-        a = 0 
+
+        customer_id = self.db.insert_customer(name, total, phone, date.today())
         for product in self.products:
             number = self.number_inputs[product[1]].value()
             print(type(number),number)
@@ -59,13 +60,12 @@ class OrderDialog(QMainWindow):
             if  stock < number:
                 QMessageBox.warning(self, f"{product[1]} 재고가 부족합니다", f"{product[3]}개 이하로 다시 시도해주세요")
                 return
-            else: 
+            else:
+                
                 self.db.update_stock(product[1],number)
                 total += product[2] * number
-
-                self.db.insert_order(a ,product[1],number)
-        self.db.insert_customer( name, total, phone, date.today())
-        self.db.change_customer_id(a,customer_id)
+                self.db.insert_order(customer_id, product[1],number)
+        self.db.update_total(total)
 
         if self.main_window is not None:
             self.main_window.load_products()

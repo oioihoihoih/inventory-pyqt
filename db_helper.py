@@ -101,16 +101,21 @@ class DB:
             
     # 상세 주문 추가 - 주문 테이블 추가
     def insert_order(self,customer_id, product_name, number):
-        sql = "INSERT INTO orders (customer_id, product_name,number) VALUES (%s,%s,%s)"
+        sql = "INSERT INTO orders (customer_id, product_id,number) VALUES (%s,%s,%s)"
         with self.connect() as conn:
             try:
                 with conn.cursor() as cursor:
-                    cursor.execute(sql, (customer_id, product_name, number))
+                    cursor.execute("SELECT id FROM product WHERE product_name = %s",(product_name))
+                    product_id = cursor.fetchone()[0]
+                    cursor.execute(sql, (customer_id, product_id, number))
                 conn.commit()
                 return True
             except Exception:
                 conn.rollback()
                 return False
+
+
+            
 
     def change_customer_id(self, a, customer_id):
         sql = "UPDATE orders SET customer_id = %s WHERE customer_id = %s"
@@ -203,3 +208,31 @@ class DB:
             with conn.cursor() as cursor:
                 cursor.execute(sql)
                 return cursor.fetchall()  # [(product_name, number)
+            
+    def update_total(
+            self,
+            total
+            ):
+        
+        sql = """
+            UPDATE customer
+            SET total =  %s
+        """
+
+        with self.connect() as conn:
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(
+                        sql,
+                        (
+                            total,
+                            id,
+                        ),
+                    )
+
+                conn.commit()
+                return True
+
+            except Exception:
+                conn.rollback()
+                return False
